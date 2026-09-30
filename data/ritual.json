@@ -1,0 +1,17 @@
+{
+  "routine": {
+    "start_date": "2026-08-11",
+    "streak_days": 34,
+    "morning": 34,
+    "evening": 33
+  },
+  "course": {
+    "attendance_rate": 100,
+    "milestone_completion": 100
+  },
+  "incident_log": {
+    "issue_date": "2026-07-13",
+    "resolve_date": "2026-07-15",
+    "variables_adjusted": ["sleep", "attire"]
+  }
+}
