@@ -1,65 +1,149 @@
 #!/usr/bin/env python3
+"""포트폴리오 갱신 장치.
+
+입력(data/):
+  ritual.json      리추얼 기록 (날짜별 open/close)
+  tasks.json       과제 목록 (능력·상황·행동·결과·날짜)
+  attendance.json  출석·제출 숫자 (출처 포함)
+  holidays.json    평일 계산에서 뺄 공휴일 (선택)
+  approved.json    내가 승인한 후보 id 목록
+
+출력(public/):
+  metrics.json               숫자 칸 (출처 포함)
+  paragraph_candidates.md    능력별 문단 후보 (날짜·근거 포함)
+  approved_paragraphs.json   승인된 후보만 담긴, 사이트가 읽는 파일
+
+같은 입력이면 항상 같은 결과가 나온다 (시간·난수 미사용, 키 정렬).
+"""
+import datetime as dt
 import json
 import os
 import sys
 
-def main():
-    data_dir = os.path.join(os.path.dirname(__file__), 'data')
-    ritual_path = os.path.join(data_dir, 'ritual.json')
-    
-    if not os.path.exists(ritual_path):
-        print(f"Error: {ritual_path} not found.")
+BASE = os.path.dirname(os.path.abspath(__file__))
+DATA = os.path.join(BASE, "data")
+OUT = os.path.join(BASE, "public")
+
+# 본인이 쓴 항목만 근거로 쓴다 (동료 관련 줄은 제외)
+OWN_PREFIXES = ("내 강점", "강점이 드러난 일화", "그 결과·알게 된 점",
+                "강점을 위해 노력하고 생각한 것", "나에게 남기는 말",
+                "오늘 지킬 강점·가치", "오늘의 첫 행동")
+KEYWORDS = {
+    "자기조절력": ["달리기", "조건", "루틴", "컨디션", "수면", "운동", "계획"],
+    "자기동기력": ["끝까지", "포기", "도전", "노력", "다시", "꾸준"],
+    "대인관계력": ["인사", "먼저 말", "도움", "공감", "협업", "감사"],
+}
+
+
+def load(name):
+    path = os.path.join(DATA, name)
+    if not os.path.exists(path):
+        print(f"Error: {path} not found.")
         sys.exit(1)
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
 
-    with open(ritual_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
 
-    # Output metrics
-    out_dir = os.path.join(os.path.dirname(__file__), 'public')
-    os.makedirs(out_dir, exist_ok=True)
-    
-    metrics_path = os.path.join(out_dir, 'metrics.json')
-    compiled_metrics = {
-        "verified_metrics": {
-            "routine": f"{data['routine']['streak_days']}일 연속 (Morning {data['routine']['morning']} / Evening {data['routine']['evening']}) | 시작일: {data['routine']['start_date']}",
-            "attendance": f"{data['course']['attendance_rate']}% | 13주 무결점 출석",
-            "milestone": f"{data['course']['milestone_completion']}% | 전 과제 완수"
-        },
-        "status": "Verified",
+def ritual_metrics(ritual, holidays):
+    days = ritual["days"]
+    dates = sorted(dt.date.fromisoformat(d["date"]) for d in days)
+    have = set(dates)
+    first, last = dates[0], dates[-1]
+    morning = sum(1 for d in days if d.get("open"))
+    evening = sum(1 for d in days if d.get("close"))
+    weekdays = [first + dt.timedelta(i) for i in range((last - first).days + 1)
+                if (first + dt.timedelta(i)).weekday() < 5
+                and str(first + dt.timedelta(i)) not in holidays]
+    recorded_wd = sum(1 for d in weekdays if d in have)
+    best = cur = 0
+    for d in weekdays:  # 주말은 건너뛰고 평일 기준으로 연속 계산
+        cur = cur + 1 if d in have else 0
+        best = max(best, cur)
+    return {
+        "days": len(dates), "morning": morning, "evening": evening,
+        "start": str(first), "end": str(last),
+        "weekdays_total": len(weekdays), "weekdays_recorded": recorded_wd,
+        "longest_weekday_streak": best,
     }
 
-    with open(metrics_path, 'w', encoding='utf-8') as f:
-        json.dump(compiled_metrics, f, indent=2, sort_keys=True, ensure_ascii=False)
-    
-    # Generate paragraph candidates
-    candidates_path = os.path.join(out_dir, 'paragraph_candidates.md')
-    candidates_content = f"""# 자기소개서 능력별 문단 후보 (자동 생성)
 
-## [자기조절력] 후보
-- **날짜**: {data['incident_log']['issue_date']} ~ {data['incident_log']['resolve_date']}
-- **근거**: {data['routine']['streak_days']}일 연속 리추얼 달성 기록 및 컨디션({', '.join(data['incident_log']['variables_adjusted'])}) 조절
-- **문단 후보**:
-제가 가진 {data['routine']['streak_days']}일 연속 리추얼 달성(출처: 리추얼 기록)이라는 숫자는 결코 매일 조건 없이 순탄하게 얻어진 것이 아닙니다. {data['incident_log']['issue_date']} 달리기를 하던 중 한계에 부딪혀 멈췄을 때, 좌절하는 대신 그날의 조건을 분석하고 환경을 바꾼 뒤 다시 달려 완주해 냈습니다. 이 경험을 통해 문제가 생겼을 때 스스로를 탓하기보다 내가 바꿀 수 있는 통제 가능한 '조건'을 찾아 조율하는 **자기조절력**을 배웠습니다.
+def build_candidates(ritual, tasks):
+    cands = []
+    for t in tasks["tasks"]:
+        cands.append({
+            "id": f"task-{t['id']}", "ability": t["ability"], "date": t["date"],
+            "evidence": f"과제 목록: {t['title']}",
+            "text": f"{t['situation']} {t['action']} {t['result']}",
+        })
+    for ability in sorted(KEYWORDS):
+        found = 0
+        for d in sorted(ritual["days"], key=lambda x: x["date"]):
+            for line in d.get("open", []) + d.get("close", []):
+                if line.startswith(OWN_PREFIXES) and any(k in line for k in KEYWORDS[ability]):
+                    cands.append({
+                        "id": f"ritual-{ability}-{d['date']}", "ability": ability,
+                        "date": d["date"], "evidence": f"리추얼 기록 {d['date']}",
+                        "text": line,
+                    })
+                    found += 1
+                    break
+            if found >= 2:
+                break
+    return sorted(cands, key=lambda c: (c["ability"], c["date"], c["id"]))
 
-## [자기동기력] 후보
-- **날짜**: 2026-07-20 (계정 삭제 버그 수정일)
-- **근거**: 자동화 테스트 통과 후에도 남은 안티패턴 버그를 끈질기게 디버깅하여 해결
-- **문단 후보**:
-다이어리 앱의 계정 삭제 기능을 구현할 때 치명적인 버그가 발생했습니다. 자동화 테스트를 통과했음에도 콘솔 창에는 빨간 줄이 가득했습니다. 답답한 상황이었지만 달리기 때처럼 '조건'을 통제하며 딥다이브했고, 진짜 원인을 찾아냈습니다. 이처럼 낯선 오류 앞에서도 도망치지 않고 바꿀 수 있는 로직부터 파악하는 **자기동기력**을 갖추게 되었습니다.
 
-## [대인관계력] 후보
-- **날짜**: 2025-05-10 (티시스 재직 당시 매뉴얼 배포일)
-- **근거**: 팀 내 소통 비용 감소 및 매뉴얼 자산화
-- **문단 후보**:
-티시스 재직 시절, 전자결재 연동 업무가 명확한 매뉴얼 없이 진행되어 소통 착오가 잦았습니다. 특정 인원에게 쏠린 의존성을 낮추기 위해 저는 API 호출 순서, 에러 코드 대응 가이드 등을 문서화했습니다. 동료의 피드백을 수용하고 해결 과정을 지식으로 나누는 **대인관계력**은 제 중요한 무기가 되었습니다.
-"""
+def write_json(path, obj):
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        json.dump(obj, f, indent=2, sort_keys=True, ensure_ascii=False)
+        f.write("\n")
 
-    with open(candidates_path, 'w', encoding='utf-8') as f:
-        f.write(candidates_content)
-    
-    print(f"Metrics updated at {metrics_path}")
-    print(f"Paragraph candidates generated at {candidates_path}")
-    print("Process completed deterministically.")
+
+def main():
+    ritual, tasks = load("ritual.json"), load("tasks.json")
+    attendance = load("attendance.json")
+    approved = set(load("approved.json").get("approved", []))
+    os.makedirs(OUT, exist_ok=True)
+
+    hp = os.path.join(DATA, "holidays.json")
+    holidays = load("holidays.json")["holidays"] if os.path.exists(hp) else {}
+    r = ritual_metrics(ritual, holidays)
+    metrics = {
+        "attendance": {"label": "출석", "value": f"{attendance['attendance']['rate']}%",
+                       "detail": f"{attendance['attendance']['weeks']}주",
+                       "source": "내 출석 기록"},
+        "ritual": {"label": "리추얼", "value": f"{r['days']}일 기록",
+                   "detail": (f"{r['start']} ~ {r['end']} · 아침 {r['morning']} / 저녁 {r['evening']}"
+                              f" · 공휴일 제외 {r['weekdays_total']}일 중 {r['weekdays_recorded']}일"
+                              f" · 최장 {r['longest_weekday_streak']}일 연속"),
+                   "source": "리추얼 기록"},
+        "submission": {"label": "제출", "value": f"{attendance['submission']['rate']}%",
+                       "detail": attendance["submission"]["note"],
+                       "source": "내 제출 현황"},
+    }
+    write_json(os.path.join(OUT, "metrics.json"), metrics)
+
+    cands = build_candidates(ritual, tasks)
+    lines = ["# 능력별 문단 후보 (자동 생성)", "",
+             "승인하려면 `data/approved.json`의 `approved`에 후보 id를 넣고 다시 실행하세요.", ""]
+    for ability in sorted({c["ability"] for c in cands}):
+        lines += [f"## {ability}", ""]
+        for c in [c for c in cands if c["ability"] == ability]:
+            mark = "승인" if c["id"] in approved else "대기"
+            lines += [f"- **id**: `{c['id']}` ({mark})",
+                      f"  - 날짜: {c['date']}",
+                      f"  - 근거: {c['evidence']}",
+                      f"  - 후보: {c['text']}", ""]
+    with open(os.path.join(OUT, "paragraph_candidates.md"), "w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lines))
+
+    write_json(os.path.join(OUT, "approved_paragraphs.json"),
+               {"approved": [c for c in cands if c["id"] in approved]})
+
+    print("metrics.json, paragraph_candidates.md, approved_paragraphs.json updated")
+    print(f"candidates={len(cands)} approved={len([c for c in cands if c['id'] in approved])}")
+
 
 if __name__ == "__main__":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
     main()

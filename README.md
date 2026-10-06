@@ -1,26 +1,27 @@
-# 포트폴리오 과제 제출물 (강아름)
+# 포트폴리오 (강아름)
 
 ## 짧은 확인 방법
-1. **사이트 주소**: [https://altdmfk.github.io/portfolio](https://altdmfk.github.io/portfolio) (가상 URL)
-2. **위치 안내**:
-   - **이야기(자기소개 본편)**: 사이트 첫 화면의 '나의 이야기' 섹션.
-   - **숫자**: 이야기 섹션 우측 상단 (13주 연속 100% 무결점, 34일 연속 리추얼 달성 등).
-   - **대표작**: 하단 '프로젝트' 섹션 (10번 논문: FIDO2 역방향 프록시, 13번 앱 예정).
-3. **문서와 장치 위치**:
-   - 이력서, 자기소개서, 경력기술서: `docs/` 폴더 내 (`resume.md`, `cover_letter.md`, `career_description.md`)
-   - 장치(자동화 스크립트): 루트 폴더의 `update_portfolio.py`, `data/ritual.json`
-   - 장치 실행 결과: `public/metrics.json`, `public/paragraph_candidates.md`
 
----
+**① 사이트 (이야기·숫자·대표작·이력서는 모두 한 페이지 안)**
+- **어디서 확인하나요**: 새 시크릿 창 → https://altdmfk.github.io/portfolio_v1/
+- **무엇을 하나요**: ① 시크릿 창을 연다 ② 주소를 붙여 넣는다 ③ 아래로 스크롤해 이야기·숫자·대표작·이력서를 본다
+- **무엇이 보이면 통과**: 로그인·인증 없이 첫 화면의 한 줄 소개("…한 사람")와 각 섹션이 보인다
+- **통과 안 될 때**: 저장소 Settings → Pages → Source를 "GitHub Actions"로 바꾸고 Actions의 "Deploy to GitHub Pages"가 success인지 본다
 
-## 장치(업데이트 스크립트) 돌리는 방법 3단계
-1. 터미널을 열고 프로젝트 루트 폴더(`task_A`)로 이동합니다.
-2. `python update_portfolio.py` 명령어를 실행합니다.
-3. `public/` 폴더 내에 `metrics.json`과 `paragraph_candidates.md` 파일이 정상적으로 생성(업데이트)되었는지 확인합니다. (동일한 데이터 입력 시 항상 같은 결과가 출력됩니다.)
+**② 장치 재현** (`update_portfolio.py`, 입력 `data/`, 결과 `public/`)
+- **어디서 확인하나요**: ZIP 안 `docs/run_compare.txt`
+- **무엇을 하나요**: ① ZIP을 새 폴더에 푼다 ② `python update_portfolio.py`를 두 번 실행한다 ③ `public/`의 결과 3개 파일 해시를 `run_compare.txt`와 비교한다
+- **무엇이 보이면 통과**: 두 번의 결과가 같고 `run_compare.txt`에 "원본과 동일: True"가 적혀 있다
+- **통과 안 될 때**: Python 3 설치와 `data/`의 입력 5개 파일이 있는지 확인한다
 
----
+**③ 문서 위치**: `docs/`의 `resume.md`(이력서), `cover_letter.md`(자기소개서), `career_description.md`(경력기술서)
 
-## AI와 나의 판단 세 줄
-1. **AI에게 맡긴 일**: 파편화된 소설 초안, 자기소개서, 이력서 데이터를 과제 요구사항과 해외 취업용 기준에 맞게 1500자 분량의 매끄러운 글로 윤문하고 이력서 양식을 구조화하는 작업을 맡겼습니다.
-2. **내가 직접 판단한 일**: 쿼리 튜닝, API 자동화, 전자결재 연동 등 개발 실무 경험을 어떤 역량(자기조절력, 자기동기력, 대인관계력)과 매칭할지 STAR 기법 기반으로 직접 기획했습니다.
-3. **AI 제안을 따르지 않은 일**: AI가 영문 이력서로 전체를 번역하려 했으나, 먼저 과제 제출과 국내/외 범용성을 고려하여 전문적인 한국어 IT 용어를 살린 구조화된 국문 이력서 및 포트폴리오를 유지하기로 결정했습니다.
+## 장치 돌리는 방법
+1. 새 기록을 `data/`에 넣는다 (`ritual.json`, `tasks.json`, `attendance.json`, `holidays.json`)
+2. `python update_portfolio.py`를 실행한다
+3. `public/paragraph_candidates.md`에서 쓸 후보의 id를 `data/approved.json`에 넣고 다시 실행한다
+
+## AI와 나의 판단
+1. **AI에게 맡긴 일**: 소설 뼈대를 이어 붙인 본편 초안, 문서 3종 정리, 사이트와 장치 코드, 배포 설정, 체크리스트 점검.
+2. **내가 직접 판단한 일**: 소설에 덧붙이는 방향과 경력 최소화, 쿼리 수치를 5초 대신 10초로 쓴 것, 공휴일 반영, 이름 크기·배경색·글자 크기·여백·문구, 승인할 기록 선택.
+3. **AI 제안을 따르지 않은 일**: AI가 만든 큰 이름과 이력서 다운로드 버튼, "평일 41일 중 37일" 숫자를 그대로 쓰지 않고 고치게 했다.

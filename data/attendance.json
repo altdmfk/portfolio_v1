@@ -1,0 +1,4 @@
+{
+  "attendance": { "rate": 100, "weeks": 13, "source": "내 출석 기록" },
+  "submission": { "rate": 100, "note": "전 과제 완수", "source": "내 제출 현황" }
+}
