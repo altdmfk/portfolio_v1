@@ -1,16 +1,16 @@
 실행 1:
-09B8B3D03F0C692D  metrics.json
+357E029FBD47CF88  metrics.json
 99A59D77609E1F73  paragraph_candidates.md
 D09B4FFF3F8FAB90  approved_paragraphs.json
 
 실행 2 (같은 폴더):
-09B8B3D03F0C692D  metrics.json
+357E029FBD47CF88  metrics.json
 99A59D77609E1F73  paragraph_candidates.md
 D09B4FFF3F8FAB90  approved_paragraphs.json
 결과 동일: True
 
 ZIP을 새 임시 폴더에 풀고 README 방법대로 실행:
-09B8B3D03F0C692D  metrics.json
+357E029FBD47CF88  metrics.json
 99A59D77609E1F73  paragraph_candidates.md
 D09B4FFF3F8FAB90  approved_paragraphs.json
 원본과 동일: True

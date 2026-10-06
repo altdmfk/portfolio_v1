@@ -112,6 +112,7 @@ def main():
                        "detail": f"{attendance['attendance']['weeks']}주",
                        "source": "내 출석 기록"},
         "ritual": {"label": "리추얼", "value": f"{r['days']}일 기록",
+                   "summary": f"{r['weekdays_total']}일 중 {r['weekdays_recorded']}일 기록",
                    "detail": (f"{r['start']} ~ {r['end']} · 아침 {r['morning']} / 저녁 {r['evening']}"
                               f" · 공휴일 제외 {r['weekdays_total']}일 중 {r['weekdays_recorded']}일"
                               f" · 최장 {r['longest_weekday_streak']}일 연속"),
