@@ -77,7 +77,7 @@ export default function PortfolioPage() {
               { k: '경력', v: '웹 개발 약 3년', s: '더존비즈온 · 티시스' },
               { k: '쿼리 개선', v: '3분 → 10초', s: '재고 조회 리팩토링' },
               { k: '자동화', v: '하루 2시간 절감', s: 'Python 주문 수집 배치' },
-              { k: '꾸준함', v: '37일 중 37일 기록', s: '리추얼 기록 · 출석 100%' },
+              { k: '꾸준함', v: metrics.ritual.summary, s: `리추얼 기록 · 출석 ${metrics.attendance.value}` },
             ].map((g) => (
               <div key={g.k} className={`p-4 rounded-xl border ${borderLight} ${cardBg}`}>
                 <div className={`text-xs ${textMuted}`}>{g.k}</div>
